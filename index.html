@@ -142,7 +142,14 @@
     songs.push(newSong);
     saveData();
     closeAddModal();
+    
+    // 修正箇所：追加した歌手を自動で選択状態にする
+    const currentArtistSelect = document.getElementById("artistSelect");
+    if(currentArtistSelect) {
+        currentArtistSelect.value = artist;
+    }
     renderSongs();
+    
     document.getElementById("artistInput").value = "";
     document.getElementById("artistKanaInput").value = "";
     document.getElementById("titleInput").value = "";
@@ -342,7 +349,6 @@
     localStorage.setItem("history", JSON.stringify(history));
   }
   
-  // 修正箇所: DOMが完全に読み込まれてからイベントリスナーを設定する
   document.addEventListener('DOMContentLoaded', () => {
     const clearButton = document.getElementById('clearDataButton');
     if (clearButton) {

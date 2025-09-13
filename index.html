@@ -117,7 +117,14 @@
     });
   });
 
-  function openAddModal() { document.getElementById("addModal").style.display = "flex"; }
+  // 修正箇所：モーダル表示時にフォームをリセット
+  function openAddModal(artist = "", artistKana = "") {
+    document.getElementById("artistInput").value = artist;
+    document.getElementById("artistKanaInput").value = artistKana;
+    document.getElementById("titleInput").value = "";
+    document.getElementById("titleKanaInput").value = "";
+    document.getElementById("addModal").style.display = "flex";
+  }
   function closeAddModal() { document.getElementById("addModal").style.display = "none"; }
 
   function openEditModal(id) {
@@ -245,9 +252,8 @@
             renderArtistSongs(selected);
             addBtn.style.display = "inline-block";
             addBtn.onclick = () => {
-                document.getElementById("artistInput").value = selected;
-                document.getElementById("artistKanaInput").value = (songs.find(s => s.artist === selected)?.artistKana) || "";
-                openAddModal();
+                const selectedArtistKana = (songs.find(s => s.artist === selected)?.artistKana) || "";
+                openAddModal(selected, selectedArtistKana);
             };
         } else {
             songListContainer.innerHTML = "";

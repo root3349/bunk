@@ -123,6 +123,10 @@
         <h3>歌唱日を修正</h3>
         <p id="editDatesSongInfo"></p>
         <ul id="dateList"></ul>
+        <div style="margin-top: 10px;">
+          <input type="date" id="newDateInput">
+          <button onclick="addNewDate()">日付を追加</button>
+        </div>
         <button onclick="closeEditDatesModal()">完了</button>
     </div>
   </div>
@@ -131,7 +135,7 @@
   let songs = JSON.parse(localStorage.getItem("songs") || "[]");
   let history = JSON.parse(localStorage.getItem("history") || "[]");
   let editingId = null;
-  let groupedSongs = {};
+  let editingDatesSongId = null;
   
   const generateUniqueId = () => '_' + Math.random().toString(36).substr(2, 9);
   songs = songs.map(song => {
@@ -178,41 +182,70 @@
     const song = songs.find(s => s.artist === artist && s.title === title);
     if (!song) return;
 
+    editingDatesSongId = song.id;
     document.getElementById("editDatesSongInfo").textContent = `${song.title} (${song.artist})`;
-    const dateList = document.getElementById("dateList");
-    dateList.innerHTML = "";
-    
-    // 日付を降順にソートして表示
-    song.dates.sort((a, b) => b.localeCompare(a)).forEach(date => {
-        const li = document.createElement("li");
-        const formattedDate = `20${date.substring(0, 2)}年${date.substring(2, 4)}月${date.substring(4, 6)}日`;
-        li.textContent = formattedDate;
-
-        const delBtn = document.createElement("button");
-        delBtn.textContent = "削除";
-        delBtn.onclick = () => {
-            if (confirm(`${formattedDate}の歌唱記録を削除しますか？`)) {
-                deleteDateFromSong(song.id, date);
-            }
-        };
-        li.appendChild(delBtn);
-        dateList.appendChild(li);
-    });
+    renderDateList(song.dates);
 
     document.getElementById("editDatesModal").style.display = "flex";
   }
 
   function closeEditDatesModal() { document.getElementById("editDatesModal").style.display = "none"; }
 
+  function renderDateList(dates) {
+      const dateList = document.getElementById("dateList");
+      dateList.innerHTML = "";
+      
+      dates.sort((a, b) => b.localeCompare(a)).forEach(date => {
+          const li = document.createElement("li");
+          const formattedDate = `20${date.substring(0, 2)}年${date.substring(2, 4)}月${date.substring(4, 6)}日`;
+          li.textContent = formattedDate;
+
+          const delBtn = document.createElement("button");
+          delBtn.textContent = "削除";
+          delBtn.onclick = () => {
+              if (confirm(`${formattedDate}の歌唱記録を削除しますか？`)) {
+                  deleteDateFromSong(editingDatesSongId, date);
+              }
+          };
+          li.appendChild(delBtn);
+          dateList.appendChild(li);
+      });
+  }
+
+  function addNewDate() {
+      const newDateInput = document.getElementById("newDateInput");
+      const dateValue = newDateInput.value;
+      if (!dateValue) {
+          alert("日付を入力してください。");
+          return;
+      }
+      
+      const [year, month, day] = dateValue.split('-');
+      const formattedDate = year.substring(2) + month + day;
+      
+      const song = songs.find(s => s.id === editingDatesSongId);
+      if (song) {
+          if (!song.dates.includes(formattedDate)) {
+              song.dates.push(formattedDate);
+              saveData();
+              renderDateList(song.dates);
+              renderSongs();
+              renderHistory();
+          } else {
+              alert("同じ日付は追加できません。");
+          }
+      }
+      newDateInput.value = "";
+  }
+
   function deleteDateFromSong(songId, dateToDelete) {
       const song = songs.find(s => s.id === songId);
       if (song) {
           song.dates = song.dates.filter(date => date !== dateToDelete);
           saveData();
-          // モーダルを再描画して、削除された日付が表示されないようにする
           openEditDatesModal(song.artist, song.title);
-          renderSongs(); // 曲リストも更新
-          renderHistory(); // 履歴リストも更新
+          renderSongs();
+          renderHistory();
       }
   }
 
@@ -230,7 +263,7 @@
   }
 
   function saveEdit() {
-    let s = songs.find(song => song.id === editingId);
+    let s = songs.find(song => s.id === editingId);
     if (!s) return;
     s.artist = document.getElementById("editArtistInput").value.trim();
     s.artistKana = document.getElementById("editArtistKanaInput").value.trim();
@@ -331,7 +364,7 @@
             songTitle.textContent = s.title;
 
             if (s.dates.length > 0) {
-              const lastDateStr = s.dates[s.dates.length - 1];
+              const lastDateStr = s.dates.sort((a,b)=>b.localeCompare(a))[0];
               const year = 2000 + parseInt(lastDateStr.substring(0, 2));
               const month = parseInt(lastDateStr.substring(2, 4)) - 1;
               const day = parseInt(lastDateStr.substring(4, 6));
@@ -417,7 +450,8 @@
       
       const songData = songs.find(s => s.title === h.title && s.artist === h.artist);
       if (songData && songData.dates.length > 0) {
-          const lastDateStr = songData.dates[songData.dates.length - 1];
+          const sortedDates = songData.dates.sort((a,b)=>b.localeCompare(a));
+          const lastDateStr = sortedDates[0];
           const year = 2000 + parseInt(lastDateStr.substring(0, 2));
           const month = parseInt(lastDateStr.substring(2, 4)) - 1;
           const day = parseInt(lastDateStr.substring(4, 6));

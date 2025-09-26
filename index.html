@@ -66,6 +66,14 @@
     h2 { font-size: 4.3vw; }
     h3 { font-size: 3.8vw; }
     .history-artist { font-size: 2.8vw; color: #666; margin-left: 8px; }
+
+    /* ここから追加したスタイル */
+    .color-blue { color: #0000ff; }
+    .color-green { color: #008000; }
+    .color-brown { color: #a52a2a; }
+    .color-orange { color: #ffa500; }
+    .color-purple { color: #800080; }
+    .color-red { color: #ff0000; }
   </style>
 </head>
 <body>
@@ -202,7 +210,7 @@
         history.unshift({ artist: song.artist, title: song.title, date: dateStr });
         if (history.length > 100) history.pop();
         saveData();
-        renderSongs();
+        renderSongs(song.artist);
     }
   }
 
@@ -210,17 +218,17 @@
     if (confirm("この履歴を削除しますか？")) {
         const song = songs.find(s => s.artist === artist && s.title === title);
         if (song && song.dates.length > 0) {
-            song.dates.pop(); // 最新の日付を削除
+            song.dates.pop();
         }
         
         history = history.filter(h => !(h.artist === artist && h.title === title));
         saveData();
         renderHistory();
-        renderSongs(); // 曲リストの表示を更新
+        renderSongs();
     }
   }
 
-  function renderSongs() {
+  function renderSongs(openArtist = null) {
     const artistListContainer = document.getElementById("artistList");
     artistListContainer.innerHTML = "";
     
@@ -241,6 +249,8 @@
       return ak.localeCompare(bk,"ja");
     });
     
+    const today = new Date();
+
     artists.forEach(artist => {
         const accordionContainer = document.createElement("div");
         accordionContainer.className = "accordion-container";
@@ -252,6 +262,10 @@
         const content = document.createElement("div");
         content.className = "accordion-content";
         
+        if (artist === openArtist) {
+            content.classList.add("open");
+        }
+
         groupedSongs[artist].sort((a,b)=>{
             const ak = a.titleKana||a.title;
             const bk = b.titleKana||b.title;
@@ -264,6 +278,32 @@
             songInfo.className = "song-info";
             const songTitle = document.createElement("div");
             songTitle.textContent = s.title;
+
+            // 歌唱日の経過月数を計算し、色を適用
+            if (s.dates.length > 0) {
+              const lastDateStr = s.dates[s.dates.length - 1];
+              const year = 2000 + parseInt(lastDateStr.substring(0, 2));
+              const month = parseInt(lastDateStr.substring(2, 4)) - 1;
+              const day = parseInt(lastDateStr.substring(4, 6));
+              const lastSungDate = new Date(year, month, day);
+
+              const diffMonths = (today.getFullYear() - lastSungDate.getFullYear()) * 12 + today.getMonth() - lastSungDate.getMonth();
+              
+              if (diffMonths < 1) {
+                songTitle.classList.add('color-blue');
+              } else if (diffMonths < 2) {
+                songTitle.classList.add('color-green');
+              } else if (diffMonths < 3) {
+                songTitle.classList.add('color-brown');
+              } else if (diffMonths < 4) {
+                songTitle.classList.add('color-orange');
+              } else if (diffMonths < 5) {
+                songTitle.classList.add('color-purple');
+              } else {
+                songTitle.classList.add('color-red');
+              }
+            }
+
             const dateSpan = document.createElement("div");
             dateSpan.className = "date";
             const last = s.dates.length ? `最終:${s.dates[s.dates.length-1]}` : "";

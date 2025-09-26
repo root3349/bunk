@@ -227,6 +227,7 @@
       if (song) {
           if (!song.dates.includes(formattedDate)) {
               song.dates.push(formattedDate);
+              song.dates.sort((a, b) => a.localeCompare(b)); // 日付を昇順にソート
               saveData();
               renderDateList(song.dates);
               renderSongs();
@@ -290,6 +291,7 @@
     let song = songs.find(s => s.id === id);
     if (song) {
         song.dates.push(dateStr);
+        song.dates.sort((a,b)=>a.localeCompare(b)); // 日付を昇順にソート
         history = history.filter(h => !(h.artist === song.artist && h.title === song.title));
         history.unshift({ artist: song.artist, title: song.title, date: dateStr });
         if (history.length > 100) history.pop();
@@ -389,8 +391,8 @@
 
             const dateSpan = document.createElement("div");
             dateSpan.className = "date";
-            const last = s.dates.length ? `最終:${s.dates[s.dates.length-1]}` : "";
-            const prev = s.dates.length > 1 ? ` 前回:${s.dates[s.dates.length-2]}` : "";
+            const last = s.dates.length ? `最終:${s.dates.sort((a,b)=>b.localeCompare(a))[0]}` : "";
+            const prev = s.dates.length > 1 ? ` 前回:${s.dates.sort((a,b)=>b.localeCompare(a))[1]}` : "";
             dateSpan.textContent = `${last}${prev}`;
             songInfo.appendChild(songTitle);
             songInfo.appendChild(dateSpan);
@@ -441,7 +443,24 @@
     const container = document.getElementById("historyList");
     container.innerHTML="";
     const today = new Date();
-    history.slice(0,100).forEach(h=>{
+    
+    // songsデータから履歴を再構築
+    let tempHistory = [];
+    songs.forEach(song => {
+        song.dates.forEach(date => {
+            tempHistory.push({
+                artist: song.artist,
+                title: song.title,
+                date: date
+            });
+        });
+    });
+
+    // 日付で降順にソート
+    tempHistory.sort((a, b) => b.date.localeCompare(a.date));
+
+    // 履歴リストの表示を更新
+    tempHistory.slice(0,100).forEach(h=>{
       let li=document.createElement("li");
       let itemText=document.createElement("div");
       
@@ -519,6 +538,7 @@
         songs = [];
         history = [];
         renderSongs();
+        renderHistory();
         alert("すべてのデータが消去されました。");
       }
     }

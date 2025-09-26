@@ -67,7 +67,7 @@
     h3 { font-size: 3.8vw; }
     .history-artist { font-size: 2.8vw; color: #666; margin-left: 8px; }
 
-    /* ここから追加したスタイル */
+    /* 色のスタイル */
     .color-blue { color: #0000ff; }
     .color-green { color: #008000; }
     .color-brown { color: #a52a2a; }
@@ -279,7 +279,6 @@
             const songTitle = document.createElement("div");
             songTitle.textContent = s.title;
 
-            // 歌唱日の経過月数を計算し、色を適用
             if (s.dates.length > 0) {
               const lastDateStr = s.dates[s.dates.length - 1];
               const year = 2000 + parseInt(lastDateStr.substring(0, 2));
@@ -357,11 +356,47 @@
   function renderHistory() {
     const container = document.getElementById("historyList");
     container.innerHTML="";
+    const today = new Date();
     history.slice(0,100).forEach(h=>{
       let li=document.createElement("li");
       let itemText=document.createElement("div");
-      itemText.innerHTML=`${h.title} <span class="history-artist">${h.artist}</span>`;
       
+      const songTitle = document.createElement("span");
+      songTitle.textContent = h.title;
+      
+      // 履歴にも色を適用
+      const songData = songs.find(s => s.title === h.title && s.artist === h.artist);
+      if (songData && songData.dates.length > 0) {
+          const lastDateStr = songData.dates[songData.dates.length - 1];
+          const year = 2000 + parseInt(lastDateStr.substring(0, 2));
+          const month = parseInt(lastDateStr.substring(2, 4)) - 1;
+          const day = parseInt(lastDateStr.substring(4, 6));
+          const lastSungDate = new Date(year, month, day);
+
+          const diffMonths = (today.getFullYear() - lastSungDate.getFullYear()) * 12 + today.getMonth() - lastSungDate.getMonth();
+          
+          if (diffMonths < 1) {
+            songTitle.classList.add('color-blue');
+          } else if (diffMonths < 2) {
+            songTitle.classList.add('color-green');
+          } else if (diffMonths < 3) {
+            songTitle.classList.add('color-brown');
+          } else if (diffMonths < 4) {
+            songTitle.classList.add('color-orange');
+          } else if (diffMonths < 5) {
+            songTitle.classList.add('color-purple');
+          } else {
+            songTitle.classList.add('color-red');
+          }
+      }
+      
+      const artistSpan = document.createElement("span");
+      artistSpan.className = "history-artist";
+      artistSpan.textContent = h.artist;
+
+      itemText.appendChild(songTitle);
+      itemText.appendChild(artistSpan);
+
       let btns = document.createElement("div");
       
       let singBtn=document.createElement("button");

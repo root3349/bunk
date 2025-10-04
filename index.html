@@ -30,10 +30,16 @@
         background-color: #008CBA; 
         color: white; 
     }
-    /* 曲リスト内の小さなボタンのサイズ */
-    .song-item button, #historyList button { 
+    /* 曲リスト内の小さなボタンのサイズ (維持) */
+    .song-item button { 
         font-size: 2.8vw; 
         padding: 3px 6px; 
+        margin: 1px;
+    }
+    /* 履歴内のボタンサイズ ★★★ 修正: さらに小さくする ★★★ */
+    #historyList button { 
+        font-size: 2.5vw; /* 縮小 */
+        padding: 2px 5px; /* 縮小 */
         margin: 1px;
     }
     
@@ -43,7 +49,7 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
-      flex-wrap: nowrap; /* 改行させない */
+      flex-wrap: nowrap;
       border-bottom: none;
       font-size: 3.3vw;
       line-height: 1.1; 
@@ -54,7 +60,6 @@
       display: flex;
       flex-direction: column;
       padding: 1px 0; 
-      /* 曲名が長すぎるときに省略表示するための設定 */
       overflow: hidden;
       white-space: nowrap;
       text-overflow: ellipsis;
@@ -86,40 +91,52 @@
       display: block;
     }
     
-    /* 履歴リストのスタイル ★★★ 修正箇所 ★★★ */
+    /* 履歴リストのスタイル */
     #historyList li {
       display: flex;
       justify-content: space-between;
       align-items: center;
       padding: 3px 0; 
       border-bottom: 1px solid #eee;
-      line-height: 1.1; /* 行の高さ調整 */
+      /* 行の高さを制御するため、line-heightは親のbody/デフォルトから継承 */
     }
     
     /* 履歴のテキスト部分 */
     #historyList li > .history-text-area { 
-        flex: 1; /* スペースを最大限使う */
+        flex: 1; 
         min-width: 0;
-        /* 折り返しを禁止し、オーバーフローは「...」で省略 */
-        white-space: nowrap; 
+        display: flex; /* 曲名と歌手・日付のコンテナ */
+        flex-direction: column;
+        padding-right: 5px; 
+    }
+    
+    /* 曲名 (メインタイトル) */
+    .history-title-line {
+        font-size: 3.3vw;
+        font-weight: bold; /* 曲名を少し目立たせる */
+        white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
+        line-height: 1.2;
     }
     
-    /* 履歴の歌手名/日付 */
-    .history-artist { 
-        /* ★★★ 修正: さらにフォントを小さくして、一行に収まりやすくする ★★★ */
+    /* 履歴の歌手名/日付 ★★★ 修正: 歌手名と日付をまとめた行 ★★★ */
+    .history-artist-line { 
         font-size: 2.5vw; 
         color: #666; 
-        margin-left: 8px; 
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        line-height: 1.1; /* 行間を詰める */
     }
     
-    /* 履歴のボタンエリア */
-    #historyList li > div:last-child {
-        /* ボタンエリアの幅を固定し、曲名エリアが十分なスペースを確保できるようにする */
+    /* 履歴のボタンエリア ★★★ 修正: ボタンを横並びにするためflexで制御 ★★★ */
+    #historyList li > .history-button-area {
         flex-shrink: 0; 
-        width: 17vw; /* ボタン3つ分の幅に固定 (調整可能) */
-        text-align: right;
+        display: flex; /* ボタンを横並びに */
+        gap: 2px; /* ボタン間のスペース */
+        align-items: center;
+        padding: 0; 
     }
 
     /* ポップアップ */
@@ -582,13 +599,16 @@
       let li=document.createElement("li");
       li.dataset.date = h.date; 
       
-      // ★★★ 修正: クラス名を付与してCSSでの調整を容易にする ★★★
+      // ★★★ 修正: テキストエリアを曲名と歌手/日付で分ける ★★★
       let itemText=document.createElement("div");
       itemText.className = "history-text-area";
       
-      const songTitle = document.createElement("span");
-      songTitle.textContent = h.title;
+      // 1行目: 曲名
+      const titleLine = document.createElement("div");
+      titleLine.className = "history-title-line";
+      titleLine.textContent = h.title;
       
+      // 色付けのロジックは曲名に適用
       const songData = songs.find(s => s.title === h.title && s.artist === h.artist);
       if (songData && songData.dates.length > 0) {
           const sortedDates = songData.dates.slice().sort((a,b)=>b.localeCompare(a));
@@ -601,28 +621,31 @@
           const diffMonths = (today.getFullYear() - lastSungDate.getFullYear()) * 12 + today.getMonth() - lastSungDate.getMonth();
           
           if (diffMonths < 1) {
-            songTitle.classList.add('color-blue');
+            titleLine.classList.add('color-blue');
           } else if (diffMonths < 2) {
-            songTitle.classList.add('color-green');
+            titleLine.classList.add('color-green');
           } else if (diffMonths < 3) {
-            songTitle.classList.add('color-brown');
+            titleLine.classList.add('color-brown');
           } else if (diffMonths < 4) {
-            songTitle.classList.add('color-orange');
+            titleLine.classList.add('color-orange');
           } else if (diffMonths < 5) {
-            songTitle.classList.add('color-purple');
+            titleLine.classList.add('color-purple');
           } else {
-            songTitle.classList.add('color-red');
+            titleLine.classList.add('color-red');
           }
       }
-      
-      const artistSpan = document.createElement("span");
-      artistSpan.className = "history-artist";
-      artistSpan.textContent = `${h.artist} (${h.date})`; 
-      
-      itemText.appendChild(songTitle);
-      itemText.appendChild(artistSpan);
 
+      // 2行目: 歌手名 (日付)
+      const artistDateLine = document.createElement("div");
+      artistDateLine.className = "history-artist-line";
+      artistDateLine.textContent = `${h.artist} (${h.date})`; 
+      
+      itemText.appendChild(titleLine);
+      itemText.appendChild(artistDateLine);
+
+      // ★★★ 修正: ボタンエリアを新しいdivで囲む ★★★
       let btns = document.createElement("div");
+      btns.className = "history-button-area";
       
       let singBtn=document.createElement("button");
       singBtn.textContent="◎";

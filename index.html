@@ -85,8 +85,13 @@
 
   <div id="songs" class="content active">
     <button onclick="openAddModal()">曲を追加</button>
+    <div style="margin: 10px 0;">
+        <button onclick="exportData()" style="background-color: #4CAF50; color: white;">データを吐き出し (JSON)</button>
+        <label for="importFile" style="background-color: #008CBA; color: white; padding: 3px 6px; border-radius: 3px; cursor: pointer; display: inline-block;">データを読み込み (JSON)</label>
+        <input type="file" id="importFile" accept=".json" style="display: none;" onchange="importData(event)">
+    </div>
     <div id="artistList"></div>
-    <button id="clearDataButton" style="background-color: #ff4d4d; color: white;">全データを消去</button>
+    <button id="clearDataButton" style="background-color: #ff4d4d; color: white; margin-top: 10px;">全データを消去</button>
   </div>
 
   <div id="history" class="content">
@@ -133,7 +138,6 @@
 
 <script>
   let songs = JSON.parse(localStorage.getItem("songs") || "[]");
-  // history配列はもう使わないため、互換性のために残すものの、データは空で扱う
   let history = []; 
   let editingId = null;
   let editingDatesSongId = null;
@@ -145,8 +149,8 @@
     }
     // 既存データの dates が 5件を超えている場合の対応（データのクリーンアップ）
     if (song.dates && song.dates.length > 5) {
-        song.dates.sort((a,b) => a.localeCompare(b)); // 日付を昇順にソート（古い方が先頭）
-        song.dates = song.dates.slice(song.dates.length - 5); // 最新の5件を残す
+        song.dates.sort((a,b) => a.localeCompare(b)); 
+        song.dates = song.dates.slice(song.dates.length - 5); 
     }
     return song;
   });
@@ -201,7 +205,6 @@
       const dateList = document.getElementById("dateList");
       dateList.innerHTML = "";
       
-      // 日付は降順に表示（新しい順）
       dates.sort((a, b) => b.localeCompare(a)).forEach(date => {
           const li = document.createElement("li");
           const formattedDate = `20${date.substring(0, 2)}年${date.substring(2, 4)}月${date.substring(4, 6)}日`;
@@ -234,14 +237,12 @@
       if (song) {
           if (!song.dates.includes(formattedDate)) {
               song.dates.push(formattedDate);
-              song.dates.sort((a, b) => a.localeCompare(b)); // 日付を昇順にソート
+              song.dates.sort((a, b) => a.localeCompare(b)); 
               
-              // ★★★ 5回を超えたら最も古い日付を削除する処理を追加 ★★★
               if (song.dates.length > 5) {
-                song.dates.shift(); // 昇順ソートされているため、先頭（最も古い日付）を削除
-                alert(`歌唱記録が5回を超えたため、最も古い記録（${formattedDate}より前の記録）を自動削除しました。`);
+                song.dates.shift(); 
+                alert(`歌唱記録が5回を超えたため、最も古い記録を自動削除しました。`);
               }
-              // ★★★ ここまで ★★★
 
               saveData();
               renderDateList(song.dates);
@@ -275,7 +276,6 @@
         if (song) {
             deleteDateFromSong(song.id, dateToDelete);
         } else {
-             // songsに見つからない場合は何もしない（songsから履歴を生成しているため）
             saveData();
             renderHistory();
         }
@@ -323,13 +323,11 @@
     let song = songs.find(s => s.id === id);
     if (song) {
         song.dates.push(dateStr);
-        song.dates.sort((a,b)=>a.localeCompare(b)); // 日付を昇順にソート
+        song.dates.sort((a,b)=>a.localeCompare(b)); 
 
-        // ★★★ 5回を超えたら最も古い日付を削除する処理を適用 ★★★
         if (song.dates.length > 5) {
-            song.dates.shift(); // 昇順ソートされているため、先頭（最も古い日付）を削除
+            song.dates.shift(); 
         }
-        // ★★★ ここまで ★★★
         
         saveData(); 
         renderSongs(song.artist);
@@ -406,7 +404,7 @@
             const songTitle = document.createElement("div");
             songTitle.textContent = s.title;
 
-            const sortedDates = s.dates.slice().sort((a,b)=>b.localeCompare(a)); // 降順ソート
+            const sortedDates = s.dates.slice().sort((a,b)=>b.localeCompare(a)); 
             
             if (sortedDates.length > 0) {
               const lastDateStr = sortedDates[0];
@@ -434,11 +432,10 @@
 
             const dateSpan = document.createElement("div");
             dateSpan.className = "date";
-            // ★★★ 直近2回分のみを表示する ★★★
+            
             const last = sortedDates.length ? `最終:${sortedDates[0]}` : "";
             const prev = sortedDates.length > 1 ? ` 前回:${sortedDates[1]}` : "";
             dateSpan.textContent = `${last}${prev}`;
-            // ★★★ ここまで ★★★
             
             songInfo.appendChild(songTitle);
             songInfo.appendChild(dateSpan);
@@ -490,7 +487,6 @@
     container.innerHTML="";
     const today = new Date();
     
-    // songsデータから履歴を動的に生成
     let tempHistory = [];
     songs.forEach(song => {
         song.dates.forEach(date => {
@@ -503,10 +499,8 @@
         });
     });
 
-    // 日付で降順にソート (新しい日付が上に来る)
     tempHistory.sort((a, b) => b.date.localeCompare(a.date));
 
-    // 履歴リストの表示を更新
     tempHistory.slice(0,100).forEach(h=>{
       let li=document.createElement("li");
       li.dataset.date = h.date; 
@@ -579,6 +573,67 @@
       container.appendChild(li);
     });
   }
+  
+  // ===================================
+  // ★★★ データのエクスポート/インポート機能 ★★★
+  // ===================================
+
+  // データのエクスポート
+  function exportData() {
+    const dataStr = JSON.stringify(songs, null, 2); 
+    const dataUri = 'data:application/json;charset=utf-8,' + encodeURIComponent(dataStr);
+
+    const exportFileName = 'karaoke_data_' + new Date().toISOString().slice(0,10).replace(/-/g,"") + '.json';
+
+    const linkElement = document.createElement('a');
+    linkElement.setAttribute('href', dataUri);
+    linkElement.setAttribute('download', exportFileName);
+    linkElement.click();
+    alert(`全曲データ (${songs.length}件) を ${exportFileName} としてエクスポートしました！`);
+  }
+
+  // データのインポート
+  function importData(event) {
+    if (!confirm("現在のデータは上書きされます。インポートを実行しますか？")) {
+        event.target.value = ''; // ファイル選択をリセット
+        return;
+    }
+    
+    const file = event.target.files[0];
+    if (!file) {
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      try {
+        const importedSongs = JSON.parse(e.target.result);
+        
+        // データの形式チェック（簡易的）
+        if (!Array.isArray(importedSongs) || importedSongs.some(item => !item.artist || !item.title)) {
+          alert('インポートしたファイルの形式が正しくありません。');
+          return;
+        }
+
+        // データの更新と保存
+        songs = importedSongs;
+        saveData();
+        renderSongs();
+        renderHistory();
+        alert(`データを正常に読み込みました！ (${songs.length}件)`);
+
+      } catch (error) {
+        alert('ファイルの解析に失敗しました。ファイルの内容を確認してください。');
+        console.error("Import Error:", error);
+      }
+      event.target.value = ''; // ファイル選択をリセット
+    };
+    reader.readAsText(file);
+  }
+
+  // ===================================
+  // ★★★ その他共通関数（変更なし） ★★★
+  // ===================================
 
   document.addEventListener('DOMContentLoaded', () => {
     const clearButton = document.getElementById('clearDataButton');

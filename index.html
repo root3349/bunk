@@ -11,8 +11,32 @@
     .tab.active { background: #555; }
     .content { display: none; padding: 10px; }
     .content.active { display: block; }
-    button { font-size: 2.8vw; padding: 3px 6px; margin: 1px; }
-
+    
+    /* 共通ボタンのスタイルを統一 */
+    button, .file-input-label { 
+        font-size: 3.3vw; /* 文字サイズを統一 */
+        padding: 8px 10px; /* パディングを統一 */
+        margin: 2px;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        display: inline-block; 
+        text-align: center;
+        text-decoration: none;
+        white-space: nowrap; /* ボタン内の文字が改行しないように */
+        box-sizing: border-box; /* paddingとborderをwidthに含める */
+    }
+    .file-input-label {
+        background-color: #008CBA; 
+        color: white; 
+    }
+    /* 曲リスト内の小さなボタンのサイズ */
+    .song-item button { 
+        font-size: 2.8vw; 
+        padding: 3px 6px; 
+        margin: 1px;
+    }
+    
     /* レイアウトの改善 */
     .song-item {
       padding: 3px 0;
@@ -67,6 +91,18 @@
     h3 { font-size: 3.8vw; }
     .history-artist { font-size: 2.8vw; color: #666; margin-left: 8px; }
 
+    /* データ操作ボタンコンテナ */
+    .data-control-container {
+        display: flex;
+        justify-content: space-between; 
+        margin-top: 15px; 
+        flex-wrap: wrap; 
+    }
+    .data-control-container > * {
+        flex: 1 1 30%; 
+        margin: 2px;
+    }
+
     /* 色のスタイル */
     .color-blue { color: #0000ff; }
     .color-green { color: #008000; }
@@ -85,13 +121,16 @@
 
   <div id="songs" class="content active">
     <button onclick="openAddModal()">曲を追加</button>
-    <div style="margin: 10px 0;">
-        <button onclick="exportData()" style="background-color: #4CAF50; color: white;">データを吐き出し (JSON)</button>
-        <label for="importFile" style="background-color: #008CBA; color: white; padding: 3px 6px; border-radius: 3px; cursor: pointer; display: inline-block;">データを読み込み (JSON)</label>
-        <input type="file" id="importFile" accept=".json" style="display: none;" onchange="importData(event)">
-    </div>
     <div id="artistList"></div>
-    <button id="clearDataButton" style="background-color: #ff4d4d; color: white; margin-top: 10px;">全データを消去</button>
+    
+    <div class="data-control-container">
+        <label for="importFile" class="file-input-label">データ読込</label>
+        <input type="file" id="importFile" accept=".json" style="display: none;" onchange="importData(event)">
+        
+        <button onclick="exportData()" style="background-color: #4CAF50; color: white;">データ吐出</button>
+        
+        <button id="clearDataButton" style="background-color: #ff4d4d; color: white;">全データ消去</button>
+    </div>
   </div>
 
   <div id="history" class="content">
@@ -147,7 +186,6 @@
     if (!song.id) {
       song.id = generateUniqueId();
     }
-    // 既存データの dates が 5件を超えている場合の対応（データのクリーンアップ）
     if (song.dates && song.dates.length > 5) {
         song.dates.sort((a,b) => a.localeCompare(b)); 
         song.dates = song.dates.slice(song.dates.length - 5); 
@@ -574,10 +612,6 @@
     });
   }
   
-  // ===================================
-  // ★★★ データのエクスポート/インポート機能 ★★★
-  // ===================================
-
   // データのエクスポート
   function exportData() {
     const dataStr = JSON.stringify(songs, null, 2); 
@@ -595,7 +629,7 @@
   // データのインポート
   function importData(event) {
     if (!confirm("現在のデータは上書きされます。インポートを実行しますか？")) {
-        event.target.value = ''; // ファイル選択をリセット
+        event.target.value = ''; 
         return;
     }
     
@@ -609,13 +643,11 @@
       try {
         const importedSongs = JSON.parse(e.target.result);
         
-        // データの形式チェック（簡易的）
         if (!Array.isArray(importedSongs) || importedSongs.some(item => !item.artist || !item.title)) {
           alert('インポートしたファイルの形式が正しくありません。');
           return;
         }
 
-        // データの更新と保存
         songs = importedSongs;
         saveData();
         renderSongs();
@@ -626,14 +658,10 @@
         alert('ファイルの解析に失敗しました。ファイルの内容を確認してください。');
         console.error("Import Error:", error);
       }
-      event.target.value = ''; // ファイル選択をリセット
+      event.target.value = ''; 
     };
     reader.readAsText(file);
   }
-
-  // ===================================
-  // ★★★ その他共通関数（変更なし） ★★★
-  // ===================================
 
   document.addEventListener('DOMContentLoaded', () => {
     const clearButton = document.getElementById('clearDataButton');

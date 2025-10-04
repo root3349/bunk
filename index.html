@@ -30,19 +30,20 @@
         background-color: #008CBA; 
         color: white; 
     }
-    /* 曲リスト内の小さなボタンのサイズ (維持) */
+    
+    /* 曲リスト内の小さなボタンのサイズ */
     .song-item button { 
         font-size: 2.8vw; 
         padding: 3px 6px; 
         margin: 1px;
     }
-    /* 履歴内のボタンサイズ ★★★ 修正: さらに小さくする ★★★ */
+    /* 履歴内のボタンサイズ */
     #historyList button { 
-        font-size: 2.5vw; /* 縮小 */
-        padding: 2px 5px; /* 縮小 */
+        font-size: 2.5vw; 
+        padding: 2px 5px; 
         margin: 1px;
     }
-    
+
     /* レイアウトの改善 - 曲リスト */
     .song-item {
       padding: 3px 0; 
@@ -75,14 +76,25 @@
     /* アコーディオンメニュー用のスタイル */
     .accordion-header {
       background-color: #f2f2f2;
-      padding: 10px;
+      /* paddingを大幅に減らす */
+      padding: 5px 10px; 
       cursor: pointer;
       border-bottom: 1px solid #ccc;
       display: flex;
       justify-content: space-between;
       align-items: center;
       font-weight: bold;
+      /* line-heightを調整してテキストとボタンの高さを揃える */
+      line-height: 1.2; 
     }
+    
+    /* アコーディオンヘッダー内の「曲を追加」ボタンのサイズも調整 */
+    .accordion-header button {
+        font-size: 2.8vw;
+        padding: 3px 6px;
+        margin: 0; 
+    }
+
     .accordion-content {
       display: none;
       padding: 10px;
@@ -98,14 +110,13 @@
       align-items: center;
       padding: 3px 0; 
       border-bottom: 1px solid #eee;
-      /* 行の高さを制御するため、line-heightは親のbody/デフォルトから継承 */
     }
     
     /* 履歴のテキスト部分 */
     #historyList li > .history-text-area { 
         flex: 1; 
         min-width: 0;
-        display: flex; /* 曲名と歌手・日付のコンテナ */
+        display: flex; 
         flex-direction: column;
         padding-right: 5px; 
     }
@@ -113,28 +124,28 @@
     /* 曲名 (メインタイトル) */
     .history-title-line {
         font-size: 3.3vw;
-        font-weight: bold; /* 曲名を少し目立たせる */
+        font-weight: bold; 
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
         line-height: 1.2;
     }
     
-    /* 履歴の歌手名/日付 ★★★ 修正: 歌手名と日付をまとめた行 ★★★ */
+    /* 履歴の歌手名/日付 */
     .history-artist-line { 
         font-size: 2.5vw; 
         color: #666; 
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
-        line-height: 1.1; /* 行間を詰める */
+        line-height: 1.1; 
     }
     
-    /* 履歴のボタンエリア ★★★ 修正: ボタンを横並びにするためflexで制御 ★★★ */
+    /* 履歴のボタンエリア */
     #historyList li > .history-button-area {
         flex-shrink: 0; 
-        display: flex; /* ボタンを横並びに */
-        gap: 2px; /* ボタン間のスペース */
+        display: flex; 
+        gap: 2px; 
         align-items: center;
         padding: 0; 
     }
@@ -340,7 +351,7 @@
               saveData();
               renderDateList(song.dates);
               renderSongs();
-              renderHistory();
+              renderHistory(); // ★修正: 履歴を再描画
           } else {
               alert("同じ日付は追加できません。");
           }
@@ -359,7 +370,7 @@
           }
           
           renderSongs();
-          renderHistory();
+          renderHistory(); // ★修正: 履歴を再描画
       }
   }
   
@@ -398,6 +409,7 @@
     saveData();
     closeEditModal();
     renderSongs();
+    renderHistory(); // ★修正: 履歴を再描画
   }
 
   function deleteSong(id) {
@@ -405,6 +417,7 @@
       songs = songs.filter(song => song.id !== id);
       saveData();
       renderSongs();
+      renderHistory(); // ★修正: 履歴を再描画
     }
   }
 
@@ -415,16 +428,19 @@
                   + String(today.getDate()).padStart(2,"0");
     let song = songs.find(s => s.id === id);
     if (song) {
-        song.dates.push(dateStr);
-        song.dates.sort((a,b)=>a.localeCompare(b)); 
+        // 同じ日の記録を重複させないためのチェック（任意だが推奨）
+        if (!song.dates.includes(dateStr)) {
+            song.dates.push(dateStr);
+            song.dates.sort((a,b)=>a.localeCompare(b)); 
 
-        if (song.dates.length > 5) {
-            song.dates.shift(); 
+            if (song.dates.length > 5) {
+                song.dates.shift(); 
+            }
         }
         
         saveData(); 
         renderSongs(song.artist);
-        renderHistory(); 
+        renderHistory(); // ★修正: 履歴を再描画
     }
   }
 
@@ -581,17 +597,25 @@
     const today = new Date();
     
     let tempHistory = [];
+    
+    // ★★★ 修正箇所: 各曲の最新の歌唱日のみを抽出する ★★★
     songs.forEach(song => {
-        song.dates.forEach(date => {
+        if (song.dates && song.dates.length > 0) {
+            // 日付を降順にソート（新しい日付が最初に来る）
+            const sortedDates = song.dates.slice().sort((a, b) => b.localeCompare(a));
+            // 最新の日付のみを取得
+            const latestDate = sortedDates[0];
+            
             tempHistory.push({
                 artist: song.artist,
                 title: song.title,
-                date: date, 
+                date: latestDate, // 最新の日付のみを使用
                 songId: song.id 
             });
-        });
+        }
     });
 
+    // 最新の歌唱日で全体をソート
     tempHistory.sort((a, b) => b.date.localeCompare(a.date));
 
     // 表示件数300曲は維持
@@ -599,7 +623,7 @@
       let li=document.createElement("li");
       li.dataset.date = h.date; 
       
-      // ★★★ 修正: テキストエリアを曲名と歌手/日付で分ける ★★★
+      // テキストエリアを曲名と歌手/日付で分ける
       let itemText=document.createElement("div");
       itemText.className = "history-text-area";
       
@@ -643,7 +667,7 @@
       itemText.appendChild(titleLine);
       itemText.appendChild(artistDateLine);
 
-      // ★★★ 修正: ボタンエリアを新しいdivで囲む ★★★
+      // ボタンエリア
       let btns = document.createElement("div");
       btns.className = "history-button-area";
       

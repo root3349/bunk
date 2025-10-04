@@ -31,36 +31,40 @@
         color: white; 
     }
     /* 曲リスト内の小さなボタンのサイズ */
-    .song-item button { 
+    .song-item button, #historyList button { 
         font-size: 2.8vw; 
         padding: 3px 6px; 
         margin: 1px;
     }
     
-    /* レイアウトの改善 */
+    /* レイアウトの改善 - 曲リスト */
     .song-item {
-      /* ★★★ 修正: パディングを狭くして行の高さを低くする ★★★ */
       padding: 3px 0; 
       display: flex;
       justify-content: space-between;
       align-items: center;
-      flex-wrap: wrap;
+      flex-wrap: nowrap; /* 改行させない */
       border-bottom: none;
       font-size: 3.3vw;
-      line-height: 1.1; /* 行の高さをさらに詰める */
+      line-height: 1.1; 
     }
     .song-info {
       flex: 1;
       min-width: 0;
       display: flex;
       flex-direction: column;
-      /* ★★★ 修正: 行間を詰めるためにマージンを調整 ★★★ */
       padding: 1px 0; 
+      /* 曲名が長すぎるときに省略表示するための設定 */
+      overflow: hidden;
+      white-space: nowrap;
+      text-overflow: ellipsis;
     }
     .date { 
         font-size: 2.3vw; 
         color: #666; 
-        line-height: 1; /* 日付表示の行を詰める */
+        line-height: 1; 
+        overflow: hidden;
+        text-overflow: ellipsis;
     }
 
     /* アコーディオンメニュー用のスタイル */
@@ -82,16 +86,40 @@
       display: block;
     }
     
-    /* 履歴リストのスタイル */
+    /* 履歴リストのスタイル ★★★ 修正箇所 ★★★ */
     #historyList li {
       display: flex;
       justify-content: space-between;
       align-items: center;
       padding: 3px 0; 
       border-bottom: 1px solid #eee;
+      line-height: 1.1; /* 行の高さ調整 */
     }
-    #historyList li > div {
-        line-height: 1.1; 
+    
+    /* 履歴のテキスト部分 */
+    #historyList li > .history-text-area { 
+        flex: 1; /* スペースを最大限使う */
+        min-width: 0;
+        /* 折り返しを禁止し、オーバーフローは「...」で省略 */
+        white-space: nowrap; 
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    
+    /* 履歴の歌手名/日付 */
+    .history-artist { 
+        /* ★★★ 修正: さらにフォントを小さくして、一行に収まりやすくする ★★★ */
+        font-size: 2.5vw; 
+        color: #666; 
+        margin-left: 8px; 
+    }
+    
+    /* 履歴のボタンエリア */
+    #historyList li > div:last-child {
+        /* ボタンエリアの幅を固定し、曲名エリアが十分なスペースを確保できるようにする */
+        flex-shrink: 0; 
+        width: 17vw; /* ボタン3つ分の幅に固定 (調整可能) */
+        text-align: right;
     }
 
     /* ポップアップ */
@@ -100,7 +128,6 @@
     .modal-content input { width: 100%; margin: 10px 0; font-size: 3.3vw; padding: 10px; }
     h2 { font-size: 4.3vw; }
     h3 { font-size: 3.8vw; }
-    .history-artist { font-size: 2.8vw; color: #666; margin-left: 8px; }
 
     /* データ操作ボタンコンテナ */
     .data-control-container {
@@ -555,7 +582,9 @@
       let li=document.createElement("li");
       li.dataset.date = h.date; 
       
+      // ★★★ 修正: クラス名を付与してCSSでの調整を容易にする ★★★
       let itemText=document.createElement("div");
+      itemText.className = "history-text-area";
       
       const songTitle = document.createElement("span");
       songTitle.textContent = h.title;

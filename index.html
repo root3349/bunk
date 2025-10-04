@@ -239,15 +239,36 @@
       newDateInput.value = "";
   }
 
+  // 履歴タブの「×」ボタンと歌唱日修正モーダルの削除ボタンで使われる共通の削除ロジック
   function deleteDateFromSong(songId, dateToDelete) {
       const song = songs.find(s => s.id === songId);
       if (song) {
           song.dates = song.dates.filter(date => date !== dateToDelete);
           saveData();
-          openEditDatesModal(song.artist, song.title);
+          
+          // モーダルが開いている場合、モーダル内を更新
+          if (document.getElementById("editDatesModal").style.display === "flex" && editingDatesSongId === songId) {
+             renderDateList(song.dates);
+          }
+          
           renderSongs();
           renderHistory();
       }
+  }
+  
+  // 履歴タブの「×」ボタン専用の削除関数 (変更)
+  function deleteHistoryItem(artist, title, dateToDelete) {
+    if (confirm(`履歴から ${artist} - ${title} (${dateToDelete}) の記録を削除しますか？`)) {
+        const song = songs.find(s => s.artist === artist && s.title === title);
+        if (song) {
+            deleteDateFromSong(song.id, dateToDelete);
+        } else {
+             // songsに見つからなくても、history配列から削除する（予備的な処理）
+            history = history.filter(h => !(h.artist === artist && h.title === title && h.date === dateToDelete));
+            saveData();
+            renderHistory();
+        }
+    }
   }
 
   function addSong() {
@@ -292,25 +313,9 @@
     if (song) {
         song.dates.push(dateStr);
         song.dates.sort((a,b)=>a.localeCompare(b)); // 日付を昇順にソート
-        history = history.filter(h => !(h.artist === song.artist && h.title === song.title));
-        history.unshift({ artist: song.artist, title: song.title, date: dateStr });
-        if (history.length > 100) history.pop();
-        saveData();
+        saveData(); // songsの更新
         renderSongs(song.artist);
-    }
-  }
-
-  function deleteHistoryItem(artist, title) {
-    if (confirm("この履歴を削除しますか？")) {
-        const song = songs.find(s => s.artist === artist && s.title === title);
-        if (song && song.dates.length > 0) {
-            song.dates.pop();
-        }
-        
-        history = history.filter(h => !(h.artist === artist && h.title === title));
-        saveData();
-        renderHistory();
-        renderSongs();
+        renderHistory(); // 履歴を更新
     }
   }
 
@@ -366,6 +371,7 @@
             songTitle.textContent = s.title;
 
             if (s.dates.length > 0) {
+              // 最新の日付を計算のベースにする
               const lastDateStr = s.dates.sort((a,b)=>b.localeCompare(a))[0];
               const year = 2000 + parseInt(lastDateStr.substring(0, 2));
               const month = parseInt(lastDateStr.substring(2, 4)) - 1;
@@ -391,8 +397,9 @@
 
             const dateSpan = document.createElement("div");
             dateSpan.className = "date";
-            const last = s.dates.length ? `最終:${s.dates.sort((a,b)=>b.localeCompare(a))[0]}` : "";
-            const prev = s.dates.length > 1 ? ` 前回:${s.dates.sort((a,b)=>b.localeCompare(a))[1]}` : "";
+            const sortedDates = s.dates.sort((a,b)=>b.localeCompare(a));
+            const last = sortedDates.length ? `最終:${sortedDates[0]}` : "";
+            const prev = sortedDates.length > 1 ? ` 前回:${sortedDates[1]}` : "";
             dateSpan.textContent = `${last}${prev}`;
             songInfo.appendChild(songTitle);
             songInfo.appendChild(dateSpan);
@@ -444,29 +451,33 @@
     container.innerHTML="";
     const today = new Date();
     
-    // songsデータから履歴を再構築
+    // songsデータから履歴を動的に生成
     let tempHistory = [];
     songs.forEach(song => {
         song.dates.forEach(date => {
             tempHistory.push({
                 artist: song.artist,
                 title: song.title,
-                date: date
+                date: date, // 歌唱日を保持
+                songId: song.id // 曲IDを保持
             });
         });
     });
 
-    // 日付で降順にソート
+    // 日付で降順にソート (新しい日付が上に来る)
     tempHistory.sort((a, b) => b.date.localeCompare(a.date));
 
     // 履歴リストの表示を更新
     tempHistory.slice(0,100).forEach(h=>{
       let li=document.createElement("li");
+      li.dataset.date = h.date; // データ属性に歌唱日を設定
+      
       let itemText=document.createElement("div");
       
       const songTitle = document.createElement("span");
       songTitle.textContent = h.title;
       
+      // 色の判定は、その曲の「最新の歌唱日」を基準に行う
       const songData = songs.find(s => s.title === h.title && s.artist === h.artist);
       if (songData && songData.dates.length > 0) {
           const sortedDates = songData.dates.sort((a,b)=>b.localeCompare(a));
@@ -495,8 +506,8 @@
       
       const artistSpan = document.createElement("span");
       artistSpan.className = "history-artist";
-      artistSpan.textContent = h.artist;
-
+      artistSpan.textContent = `${h.artist} (${h.date})`; // 日付を表示
+      
       itemText.appendChild(songTitle);
       itemText.appendChild(artistSpan);
 
@@ -517,8 +528,9 @@
 
       let delBtn = document.createElement("button");
       delBtn.textContent = "×";
+      // 歌唱日を引数として渡す
       delBtn.onclick = () => {
-        deleteHistoryItem(h.artist, h.title);
+        deleteHistoryItem(h.artist, h.title, h.date);
       };
 
       btns.appendChild(singBtn);
@@ -536,7 +548,8 @@
       if (confirm("この操作は元に戻せません！よろしいですか？")) {
         localStorage.clear();
         songs = [];
-        history = [];
+        // history配列も不要になったが、互換性のため空にする
+        history = []; 
         renderSongs();
         renderHistory();
         alert("すべてのデータが消去されました。");
@@ -546,7 +559,8 @@
 
   function saveData() {
     localStorage.setItem("songs", JSON.stringify(songs));
-    localStorage.setItem("history", JSON.stringify(history));
+    // history配列は不要になったため、保存しないか、空にする（今回は空に）
+    localStorage.setItem("history", "[]"); 
   }
   
   document.addEventListener('DOMContentLoaded', () => {
@@ -555,6 +569,8 @@
       clearButton.addEventListener('click', clearAllData);
     }
     renderSongs();
+    // ページロード時にも履歴をsongsから動的に生成するように変更
+    renderHistory();
   });
 </script>
 </body>

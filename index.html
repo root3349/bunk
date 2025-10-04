@@ -14,8 +14,8 @@
     
     /* 共通ボタンのスタイルを統一 */
     button, .file-input-label { 
-        font-size: 3.3vw; /* 文字サイズを統一 */
-        padding: 8px 10px; /* パディングを統一 */
+        font-size: 3.3vw; 
+        padding: 8px 10px; 
         margin: 2px;
         border: none;
         border-radius: 4px;
@@ -23,8 +23,8 @@
         display: inline-block; 
         text-align: center;
         text-decoration: none;
-        white-space: nowrap; /* ボタン内の文字が改行しないように */
-        box-sizing: border-box; /* paddingとborderをwidthに含める */
+        white-space: nowrap;
+        box-sizing: border-box;
     }
     .file-input-label {
         background-color: #008CBA; 
@@ -39,21 +39,29 @@
     
     /* レイアウトの改善 */
     .song-item {
-      padding: 3px 0;
+      /* ★★★ 修正: パディングを狭くして行の高さを低くする ★★★ */
+      padding: 3px 0; 
       display: flex;
       justify-content: space-between;
       align-items: center;
       flex-wrap: wrap;
       border-bottom: none;
       font-size: 3.3vw;
+      line-height: 1.1; /* 行の高さをさらに詰める */
     }
     .song-info {
       flex: 1;
       min-width: 0;
       display: flex;
       flex-direction: column;
+      /* ★★★ 修正: 行間を詰めるためにマージンを調整 ★★★ */
+      padding: 1px 0; 
     }
-    .date { font-size: 2.3vw; color: #666; }
+    .date { 
+        font-size: 2.3vw; 
+        color: #666; 
+        line-height: 1; /* 日付表示の行を詰める */
+    }
 
     /* アコーディオンメニュー用のスタイル */
     .accordion-header {
@@ -79,8 +87,11 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
-      padding: 5px 0;
+      padding: 3px 0; 
       border-bottom: 1px solid #eee;
+    }
+    #historyList li > div {
+        line-height: 1.1; 
     }
 
     /* ポップアップ */
@@ -334,7 +345,7 @@
   }
 
   function saveEdit() {
-    let s = songs.find(song => s.id === editingId);
+    let s = songs.find(song => song.id === editingId);
     if (!s) return;
     s.artist = document.getElementById("editArtistInput").value.trim();
     s.artistKana = document.getElementById("editArtistKanaInput").value.trim();
@@ -539,7 +550,8 @@
 
     tempHistory.sort((a, b) => b.date.localeCompare(a.date));
 
-    tempHistory.slice(0,100).forEach(h=>{
+    // 表示件数300曲は維持
+    tempHistory.slice(0,300).forEach(h=>{
       let li=document.createElement("li");
       li.dataset.date = h.date; 
       
